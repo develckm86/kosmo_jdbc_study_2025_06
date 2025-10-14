@@ -68,6 +68,35 @@ public class H02PSTMT {
                 //System.out.println(str);
                 System.out.println(sb.toString());
             }
+            sql="SELECT e.*, d.dname, e.ename 이름, e.sal 급여 FROM EMP e LEFT JOIN DEPT d ON e.deptno=d.deptno";
+//            sql="SELECT e.*,(SELECT dname FROM dept WHERE deptno=e.deptno) dname FROM EMP e";
+            try (Statement stmt= conn.createStatement();
+                 ResultSet rs=stmt.executeQuery(sql);){
+                StringBuilder sb=new StringBuilder();
+                while (rs.next()){
+                    int empno=rs.getInt("empno");
+                    int deptno=rs.getInt("deptno");
+                    int sal=rs.getInt("급여");
+                    int comm=rs.getInt("comm");
+                    String ename=rs.getString("이름");
+                    String dname=rs.getString("dname");
+                    sb.append(empno+" | "+deptno+" | "+sal+" | "+comm+" | "+ename+" | "+dname+"\n");
+                }
+                System.out.println(sb.toString());
+            }
+            sql="SELECT deptno, AVG(sal) \"부서별 평균 급여\" FROM EMP GROUP BY deptno";
+            try(Statement stmt=conn.createStatement();
+                ResultSet rs=stmt.executeQuery(sql)){
+                StringBuilder sb=new StringBuilder();
+                while (rs.next()){
+                    int deptno=rs.getInt("deptno");
+                    double salAvg=rs.getDouble("부서별 평균 급여");
+                    sb.append(deptno+" | "+salAvg+"\n");
+                }
+                System.out.println(sb);
+            }
+
+
         } catch (SQLException e) {
             e.printStackTrace();
         }
