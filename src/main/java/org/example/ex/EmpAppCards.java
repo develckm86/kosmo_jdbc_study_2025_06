@@ -1,8 +1,15 @@
 package org.example.ex;
 
+import org.example.L03DBFactory;
+import org.example.L05EmpDao;
+import org.example.L05EmpDaoImp;
+import org.example.L05EmpDto;
+
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.sql.SQLException;
+import java.util.function.Consumer;
 
 /**
  * EMP 관리 UI (CardLayout)
@@ -17,9 +24,9 @@ public class EmpAppCards {
     private static final String CARD_UPDATE = "UPDATE";
     private static final String CARD_DELETE = "DELETE";
 
+    private static JLabel status;           // 하단 상태바
     private JFrame frame;
     private JPanel cards;            // 중앙 카드 영역
-    private JLabel status;           // 하단 상태바
     private ViewPage viewPage;       // 조회 페이지
     private CreatePage createPage;   // 등록 페이지
     private UpdatePage updatePage;   // 수정 페이지
@@ -46,10 +53,10 @@ public class EmpAppCards {
 
         // 중앙 카드 영역
         cards = new JPanel(new CardLayout());
-        viewPage   = new ViewPage(this::setStatus);
-        createPage = new CreatePage(this::setStatus);
-        updatePage = new UpdatePage(this::setStatus);
-        deletePage = new DeletePage(this::setStatus);
+        viewPage   = new ViewPage();
+        createPage = new CreatePage();
+        updatePage = new UpdatePage();
+        deletePage = new DeletePage();
 
         cards.add(viewPage,   CARD_VIEW);
         cards.add(createPage, CARD_CREATE);
@@ -77,27 +84,21 @@ public class EmpAppCards {
 
     private void showCard(String name) {
         ((CardLayout) cards.getLayout()).show(cards, name);
-        setStatus(name + " 페이지");
+        status.setText(name + " 페이지");
     }
 
-    private void setStatus(String msg) {
-        status.setText(msg);
-    }
 
     /* ---------------------------
        조회 페이지 (테이블 + 이름검색)
        --------------------------- */
     static class ViewPage extends JPanel {
-        private final DefaultTableModel model;
+        private final DefaultTableModel tableModel;
         private final JTable table;
         private final JTextField tfName;
         private final JButton btnLoadAll, btnSearch;
-        private final java.util.function.Consumer<String> status;
 
-        ViewPage(java.util.function.Consumer<String> statusSetter) {
+        ViewPage() {
             super(new BorderLayout(6,6));
-            this.status = statusSetter;
-
             // 상단 검색 바
             JPanel searchBar = new JPanel(new FlowLayout(FlowLayout.LEFT));
             searchBar.add(new JLabel("이름 검색:"));
@@ -110,10 +111,10 @@ public class EmpAppCards {
             add(searchBar, BorderLayout.NORTH);
 
             // 중앙 테이블
-            model = new DefaultTableModel(new Object[]{"EMPNO","ENAME","DEPTNO","SAL","HIREDATE"}, 0) {
+            tableModel = new DefaultTableModel(new Object[]{"EMPNO","ENAME","DEPTNO","SAL","HIREDATE"}, 0) {
                 @Override public boolean isCellEditable(int r, int c) { return false; }
             };
-            table = new JTable(model);
+            table = new JTable(tableModel);
             add(new JScrollPane(table), BorderLayout.CENTER);
 
             // 이벤트 (JDBC는 TODO로 비워둠)
@@ -124,24 +125,37 @@ public class EmpAppCards {
 
         private void onLoadAll() {
             // TODO: 여기에서 JDBC로 전체 조회 후 model 채우기
-            model.setRowCount(0);
+            tableModel.setRowCount(0);
             // 예) model.addRow(new Object[]{empno, ename, deptno, sal, hiredate});
-            status.accept("[TODO] 전체 조회 구현");
+            L05EmpDao empDao= null;
+            try {
+                empDao = new L05EmpDaoImp(L03DBFactory.getConn());
+                java.util.List<L05EmpDto> emps=empDao.findAll();
+                for (L05EmpDto e : emps) {
+                    Object [] row={ e.getEmpno(), e.getEname(), e.getDeptno(), e.getSal(), e.getHiredate()};
+                    tableModel.addRow(row);
+                }
+                status.setText("전체 직원 " + emps.size() + "명 조회 완료");
+            } catch (SQLException e) {
+                e.printStackTrace();
+                status.setText("조회 실패");
+            }
         }
 
         private void onSearch() {
             String keyword = tfName.getText().trim();
             if (keyword.isEmpty()) {
-                status.accept("이름을 입력하세요.");
+                status.setText("이름을 입력하세요.");
                 return;
             }
             // TODO: 여기에서 JDBC로 ENAME LIKE ? 검색 후 model 채우기
-            model.setRowCount(0);
-            status.accept("[TODO] 이름 검색 구현: " + keyword);
+
+            tableModel.setRowCount(0);
+            status.setText("[TODO] 이름 검색 구현: " + keyword);
         }
 
         // 외부에서 필요 시 호출할 수 있는 헬퍼 (선택)
-        void clearTable() { model.setRowCount(0); }
+        void clearTable() { tableModel.setRowCount(0); }
     }
 
     /* ---------------------------
@@ -155,11 +169,9 @@ public class EmpAppCards {
         private final JTextField tfHiredate = new JTextField(10); // yyyy-MM-dd
         private final JButton btnSubmit = new JButton("등록");
         private final JButton btnClear = new JButton("초기화");
-        private final java.util.function.Consumer<String> status;
 
-        CreatePage(java.util.function.Consumer<String> statusSetter) {
+        CreatePage() {
             super(new BorderLayout(6,6));
-            this.status = statusSetter;
 
             JPanel form = new JPanel(new GridBagLayout());
             GridBagConstraints g = baseGbc();
@@ -180,7 +192,7 @@ public class EmpAppCards {
             // 이벤트 (JDBC는 TODO)
             btnSubmit.addActionListener(e -> {
                 // TODO: INSERT JDBC
-                status.accept("[TODO] 등록 구현");
+                status.setText("[TODO] 등록 구현");
             });
             btnClear.addActionListener(e -> clearForm());
         }
@@ -204,7 +216,7 @@ public class EmpAppCards {
         void clearForm() {
             tfEmpno.setText(""); tfEname.setText(""); tfDeptno.setText("");
             tfSal.setText(""); tfHiredate.setText("");
-            status.accept("등록 폼 초기화");
+            status.setText("등록 폼 초기화");
         }
     }
 
@@ -219,11 +231,9 @@ public class EmpAppCards {
         private final JTextField tfHiredate = new JTextField(10); // yyyy-MM-dd
         private final JButton btnLoad = new JButton("불러오기");
         private final JButton btnApply = new JButton("수정 저장");
-        private final java.util.function.Consumer<String> status;
 
-        UpdatePage(java.util.function.Consumer<String> statusSetter) {
+        UpdatePage() {
             super(new BorderLayout(6,6));
-            this.status = statusSetter;
 
             JPanel form = new JPanel(new GridBagLayout());
             GridBagConstraints g = baseGbc();
@@ -244,11 +254,11 @@ public class EmpAppCards {
             // 이벤트 (JDBC는 TODO)
             btnLoad.addActionListener(e -> {
                 // TODO: SELECT by empno → 폼 채우기
-                status.accept("[TODO] 수정 대상 불러오기");
+                status.setText("[TODO] 수정 대상 불러오기");
             });
             btnApply.addActionListener(e -> {
                 // TODO: UPDATE JDBC
-                status.accept("[TODO] 수정 저장");
+                status.setText("[TODO] 수정 저장");
             });
         }
 
@@ -274,11 +284,9 @@ public class EmpAppCards {
     static class DeletePage extends JPanel {
         private final JTextField tfEmpno = new JTextField(10);
         private final JButton btnDelete = new JButton("삭제");
-        private final java.util.function.Consumer<String> status;
 
-        DeletePage(java.util.function.Consumer<String> statusSetter) {
+        DeletePage() {
             super(new BorderLayout(6,6));
-            this.status = statusSetter;
 
             JPanel form = new JPanel(new GridBagLayout());
             GridBagConstraints g = new GridBagConstraints();
@@ -302,7 +310,7 @@ public class EmpAppCards {
             // 이벤트 (JDBC는 TODO)
             btnDelete.addActionListener(e -> {
                 // TODO: DELETE JDBC
-                status.accept("[TODO] 삭제 실행");
+                status.setText("[TODO] 삭제 실행");
             });
         }
     }
