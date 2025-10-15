@@ -1,6 +1,23 @@
 package org.example;
 
+import java.sql.SQLException;
+import java.util.List;
+
 public interface L07DeptDao {
+    /*
+    부서전체조회,SELECT * FROM DEPT;
+    부서상세조회,SELECT * FROM DEPT WHERE DEPTNO=?;
+    부서등록 INSERT INTO DEPT (deptno,dname,loc) VALUES (?,?,?);
+    부서수정 UPDATE DEPT SET dname=?,loc=? WHERE deptno=?
+    부서이름수정 UPDATE DEPT SET dname=? WHERE deptno=?
+    부서위치수정 UPDATE DEPT SET loc=? WHERE deptno=?
+    부서삭제 DELETE FROM DEPT WHERE deptno=?
+    */
+    List<L07DeptDto> findAll() throws SQLException;
+    L07DeptDto findByDeptno(int deptno) throws SQLException;
+    int insertOne(L07DeptDto deptDto) throws SQLException;
+    int updateOne(L07DeptDto deptDto) throws SQLException;
+    int deleteOne(int deptno) throws SQLException;
 }
 @FunctionalInterface //람다식으로 익명클래스를 대체
 interface B{//모든 함수는 자동으로 public(오픈된 기능), abstract(추상화)
