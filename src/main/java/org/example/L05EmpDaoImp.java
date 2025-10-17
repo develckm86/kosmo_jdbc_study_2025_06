@@ -19,17 +19,59 @@ public class L05EmpDaoImp implements L05EmpDao{
     }
     @Override
     public int insertOne(L05EmpDto emp) throws SQLException {
-        return 0;
+        int insertOne=0;
+        String sql="INSERT INTO EMP (EMPNO, ENAME, JOB, MGR, HIREDATE, SAL, COMM, DEPTNO) " +
+                " VALUES (?,?,?,?,?,?,?,?)";
+        try(PreparedStatement ps=conn.prepareStatement(sql)){
+            ps.setInt(1,emp.getEmpno());
+            ps.setString(2,emp.getEname());
+            ps.setString(3,emp.getJob());
+//            ps.setInt(4,null);
+            ps.setObject(4,emp.getMgr());
+//            ps.setDate(5,emp.getHiredate());
+            //java.sql.Date->LocalDate => "20025-01-05" => oracle Date로 바로변환!!
+            //LocalDate->java.sql.Date
+            java.sql.Date hiredate=null;
+            if(emp.getHiredate()!=null)hiredate=java.sql.Date.valueOf(emp.getHiredate());
+            ps.setDate(5,hiredate);
+            //ps.setString(5,emp.getHiredate().toString());
+            ps.setObject(6,emp.getSal());
+            ps.setObject(7,emp.getComm());
+            ps.setObject(8,emp.getDeptno());
+            insertOne=ps.executeUpdate();
+            //쿼리실행못하고 멈춤!!
+        }
+        return insertOne;
     }
 
+    //updateSal :"UPDATE EMP SET SAL=? WHERE EMPNO=?"
     @Override
     public int updateOne(L05EmpDto emp) throws SQLException {
-        return 0;
+        int updateOne=0;
+        String sql="UPDATE EMP SET ENAME=?, JOB=?, MGR=?, HIREDATE=?, SAL=?, COMM=?, DEPTNO=? WHERE EMPNO=?";
+        try(PreparedStatement ps=conn.prepareStatement(sql)){
+            ps.setString(1,emp.getEname());
+            ps.setString(2,emp.getJob());
+            ps.setObject(3,emp.getMgr());
+            ps.setString(4,(emp.getHiredate()!=null) ? emp.getHiredate().toString() : null );
+            ps.setObject(5,emp.getSal());
+            ps.setObject(6,emp.getComm());
+            ps.setObject(7,emp.getDeptno());
+            ps.setInt(8,emp.getEmpno());
+            updateOne= ps.executeUpdate();
+        }
+        return updateOne;
     }
 
     @Override
     public int deleteOne(int empno) throws SQLException {
-        return 0;
+        int deleteOne=0;
+        String sql="DELETE FROM EMP WHERE empno=?";
+        try (PreparedStatement ps=conn.prepareStatement(sql)){
+            ps.setInt(1,empno);
+            deleteOne=ps.executeUpdate();
+        }
+        return deleteOne;
     }
 
     @Override
@@ -76,14 +118,61 @@ public class L05EmpDaoImp implements L05EmpDao{
         }
         return empList;
     }
-
+    //findByLikeEname
+    // String sql="SELECT * FROM EMP WHERE ename LIKE %?%"; (오류)
+    // String sql="SELECT * FROM EMP WHERE ename LIKE %'k'%"; (오류)
+    // String sql="SELECT * FROM EMP WHERE ename LIKE %||?||%; (정답)
+    // String sql="SELECT * FROM EMP WHERE ename LIKE '%k%'";
     @Override
     public List<L05EmpDto> findByEname(String ename) throws SQLException {
-        return List.of();
+        List<L05EmpDto> emps=null;
+        String sql="SELECT * FROM EMP WHERE UPPER(ename)=UPPER(?)"; //대소문자 구분없이 조회
+        try (PreparedStatement pstmt=conn.prepareStatement(sql); ){
+            pstmt.setString(1,ename);
+            try (ResultSet rs=pstmt.executeQuery()){
+                emps=new ArrayList<>();
+                while (rs.next()){
+                    L05EmpDto emp=mapRow(rs);
+                    emps.add(emp);
+                }
+            }
+        }
+        return emps;
     }
 
     @Override
     public L05EmpDto findByEmpno(int empno) throws SQLException {
-        return null;
+        L05EmpDto emp=null;
+        String sql="SELECT * FROM EMP WHERE empno=?";
+        try(PreparedStatement ps=conn.prepareStatement(sql)){
+            ps.setInt(1,empno);
+            try (ResultSet rs=ps.executeQuery()){
+                if(rs.next()){
+                    emp=mapRow(rs);
+                }
+            }
+        }
+        return emp;
     }
+
+    public L05EmpDto mapRow(ResultSet rs) throws SQLException{
+        L05EmpDto emp=new L05EmpDto();
+
+        emp.setEmpno(rs.getInt("empno"));
+        emp.setEname(rs.getString("ename"));
+        emp.setJob(rs.getString("job"));
+        if(rs.getDate("hiredate")!=null)
+            emp.setHiredate(rs.getDate("hiredate").toLocalDate());
+        if(rs.getBigDecimal("comm")!=null)
+            emp.setComm(rs.getDouble("comm"));
+        if(rs.getObject("sal")!=null)
+            emp.setSal(rs.getDouble("sal"));
+        if(rs.getObject("mgr")!=null)
+            emp.setMgr(rs.getInt("mgr"));
+        if(rs.getObject("deptno")!=null)
+            emp.setDeptno(rs.getInt("deptno"));
+        return  emp;
+    }
+
+
 }
