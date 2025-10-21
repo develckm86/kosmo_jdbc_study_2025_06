@@ -47,12 +47,14 @@ public class L09EmpServiceImp implements L09EmpService{
             //Emp.deptno null 허용
             if(emp.getDeptno()!=null){
                 L07DeptDto existDept=deptDao.findByDeptno(emp.getDeptno());//등록하려는 부서가 존재하나
-                List<L07DeptDto> depts=deptDao.findAll();
-                List<Integer> deptnos=new ArrayList<>();
-                for (L07DeptDto dept :depts){
-                    deptnos.add(dept.getDeptno());
+                if(existDept==null){
+                    List<L07DeptDto> depts=deptDao.findAll();
+                    List<Integer> deptnos=new ArrayList<>();
+                    for (L07DeptDto dept :depts){
+                        deptnos.add(dept.getDeptno());
+                    }
+                    throw new IllegalArgumentException("존재하는 부서번호를 입력하세요!"+deptnos);
                 }
-                if(existDept==null) throw new IllegalArgumentException("존재하는 부서번호를 입력하세요!"+deptnos);
             }
             //Emp.mrg (상사의 사번) null 허용
             if(emp.getMgr()!=null){
@@ -60,7 +62,7 @@ public class L09EmpServiceImp implements L09EmpService{
                 if(existMrg==null) throw new IllegalArgumentException("상사가 존재하지 않습니다.mgr을 확인");
             }
             int insert=empDao.insertOne(emp);
-            return insert==0;
+            return insert==1;
         } catch (Exception e) {
             conn.rollback();
             throw e; //오류가 뜨면 오류를 바로 위임
