@@ -15,6 +15,10 @@ public interface L09EmpService {
     //IllegalArgumentException : 입력오류(사원의이름이 없거나 길이가 넘거나, 급여가 잘못등록됨...)
     boolean register(L05EmpDto emp) throws SQLException,IllegalArgumentException;
     boolean modify(L05EmpDto emp) throws SQLException,IllegalArgumentException;
+
+    boolean register(L11EmpValidBean emp) throws SQLException,IllegalArgumentException;
+    boolean modify(L11EmpValidBean emp) throws SQLException,IllegalArgumentException;
+
     boolean remove(int empno) throws SQLException;
 
     List<L05EmpDto> readAll() throws SQLException;

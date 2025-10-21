@@ -10,7 +10,7 @@ public class L11EmpValidBean {
     private int empno;
     private String ename;
     private String job;
-    private LocalDate hiredate;
+    private LocalDate hiredate=LocalDate.now(); //기본값 (Bean 전용)
     private Double sal;
     private Double comm;
     private Integer mgr; //Emp.empno FK (생성불가)

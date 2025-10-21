@@ -94,6 +94,51 @@ public class L09EmpServiceImp implements L09EmpService{
 
         return empDao.updateOne(emp)==1;
     }
+
+    @Override
+    public boolean register(L11EmpValidBean emp) throws SQLException, IllegalArgumentException {
+        //유효성검증 empno,ename,sal,comm EmpVaildBean (할필요 없음)
+        //DB 검증 : 사번을 사용중인가, 상사번호가 존재하나, 부서번호가 존재하나
+        boolean register=false;
+        try{
+            conn.setAutoCommit(false);
+            conn.commit();
+            L05EmpDto existEmp=empDao.findByEmpno(emp.getEmpno());
+            if(existEmp!=null) throw new IllegalArgumentException("사용 중인 사원번호입니다.");
+            if(emp.getMgr()!=null){
+                L05EmpDto existMrg=empDao.findByEmpno(emp.getMgr());
+                if(existMrg==null) throw new IllegalArgumentException("존재하지 않는 상사번호입니다.");
+            }
+            if(emp.getDeptno()!=null){
+                L07DeptDto existDept=deptDao.findByDeptno(emp.getDeptno());
+                if(existDept==null) throw  new IllegalArgumentException("존재하지 않는 부서번호입니다,");
+            }
+            //Controller(Test) ->bean-> Servie -> dto-> Dao
+            L05EmpDto empDto=new L05EmpDto();
+            empDto.setEmpno(emp.getEmpno());
+            empDto.setEname(emp.getEname());
+            empDto.setMgr(emp.getMgr());
+            empDto.setSal(emp.getSal());
+            empDto.setComm(emp.getComm());
+            empDto.setJob(emp.getJob());
+            empDto.setHiredate(emp.getHiredate());
+            empDto.setDeptno(emp.getDeptno());
+            int insert=empDao.insertOne(empDto);
+            register=insert>0;
+        } catch (Exception e) {
+            conn.rollback();
+            throw e;
+        }finally {
+            conn.setAutoCommit(true);
+        }
+        return register;
+    }
+
+    @Override
+    public boolean modify(L11EmpValidBean emp) throws SQLException, IllegalArgumentException {
+        return false;
+    }
+
     //service : dao=1:1 (서비스가 단순한 경우)
     @Override
     public boolean remove(int empno) throws SQLException {
